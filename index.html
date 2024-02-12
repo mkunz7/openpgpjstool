@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenPGPJS Tool</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/openpgp@5.11.0/dist/openpgp.min.js"></script>
+<style>
+	.dark-border-textarea {
+		border-color: #343a40; /* Dark gray border */
+		/* Optional: add to enhance focus visibility */
+		box-shadow: 0 0 0 0.25rem rgba(52, 58, 64, 0.25);
+	}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1 class="mt-5">OpenPGP Tool</h1>
+
+    <ul class="nav nav-tabs mt-5">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#generateTab">Generate Keys</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#encryptTab">Encrypt</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#decryptTab">Decrypt</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#fileEncryptTab">File Encrypt</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#fileDecryptTab">File Decrypt</a>
+        </li>
+		<li class="nav-item">
+			<a class="nav-link" data-bs-toggle="tab" href="#infoTab">Info</a>
+		</li>
+    </ul>
+
+    <div class="tab-content mt-3">
+        <div id="generateTab" class="tab-pane fade show active">
+            <h2>Generate Key Pair</h2>
+            <div>
+                <label for="name">Name:</label><br>
+                <input type="text" id="name" name="name"><br><br>
+                <label for="email">Email:</label><br>
+                <input type="email" id="email" name="email"><br><br>
+                <label for="passphrase">Passphrase (optional):</label><br>
+                <input type="password" id="passphrase" name="passphrase"><br><br>
+                <button class="btn btn-primary" onclick="generateKeyPair()">Generate Key Pair</button>
+            </div>
+            <div id="generatedKeys" style="display: none;">
+                <h3 class="mt-4">Generated Keys</h3>
+                <textarea id="privateKey" rows="10" class="form-control dark-border-textarea" readonly></textarea><br>
+                <textarea id="publicKey" rows="10" class="form-control dark-border-textarea" readonly></textarea>
+            </div>
+        </div>
+
+        <div id="encryptTab" class="tab-pane fade">
+            <h2>Encrypt Message</h2>
+            <div>
+                <textarea id="messageToEncrypt" rows="5" class="form-control dark-border-textarea" placeholder="Enter message to encrypt"></textarea><br>
+                <textarea id="publicKeyToEncrypt" rows="5" class="form-control dark-border-textarea" placeholder="Paste public key here"></textarea><br>
+                <button class="btn btn-primary" onclick="encryptMessage()">Encrypt Message</button>
+            </div>
+            <div id="encryptedMessage" style="display: none;">
+                <h3 class="mt-4">Encrypted Message</h3>
+                <textarea id="encryptedText" rows="5" class="form-control dark-border-textarea" readonly></textarea>
+            </div>
+        </div>
+
+        <div id="decryptTab" class="tab-pane fade">
+            <h2>Decrypt Message</h2>
+            <div>
+                <textarea id="messageToDecrypt" rows="5" class="form-control dark-border-textarea" placeholder="Enter message to decrypt"></textarea><br>
+                <textarea id="privateKeyToDecrypt" rows="5" class="form-control dark-border-textarea" placeholder="Paste private key here"></textarea><br>
+                <label for="passphraseToDecrypt">Passphrase (optional):</label><br>
+                <input type="password" id="passphraseToDecrypt" name="passphraseToDecrypt" class="form-control dark-border-textarea"><br>
+                <button class="btn btn-primary" onclick="decryptMessage()">Decrypt Message</button>
+            </div>
+            <div id="decryptedMessage" style="display: none;">
+                <h3 class="mt-4">Decrypted Message</h3>
+                <textarea id="decryptedText" rows="5" class="form-control" readonly></textarea>
+            </div>
+        </div>
+
+        <div id="fileEncryptTab" class="tab-pane fade">
+            <h2>Encrypt File</h2>
+            <div>
+                <label for="fileToEncrypt">Select file to encrypt:</label><br>
+                <input type="file" id="fileToEncrypt"><br><br>
+                <textarea id="publicKeyFileToEncrypt" rows="5" class="form-control dark-border-textarea" placeholder="Paste public key here"></textarea><br>
+                <button class="btn btn-primary" onclick="encryptFile()">Encrypt File</button>
+            </div>
+            <div id="encryptedFileMessage" style="display: none;">
+                <h3 class="mt-4">Encrypted File</h3>
+                <a id="encryptedFileDownloadLink" href="" download="encrypted_file.asc">Download Encrypted File</a>
+            </div>
+        </div>
+
+        <div id="fileDecryptTab" class="tab-pane fade">
+            <h2>Decrypt File</h2>
+            <div>
+                <label for="fileToDecrypt">Select file to decrypt:</label><br>
+                <input type="file" id="fileToDecrypt"><br><br>
+                <textarea id="privateKeyFileToDecrypt" rows="5" class="form-control dark-border-textarea" placeholder="Paste private key here"></textarea><br>
+                <label for="passphraseFileToDecrypt">Passphrase (optional):</label><br>
+                <input type="password" id="passphraseFileToDecrypt" name="passphraseFileToDecrypt" class="form-control dark-border-textarea"><br>
+                <button class="btn btn-primary" onclick="decryptFile()">Decrypt File</button>
+            </div>
+            <div id="decryptedFileMessage" style="display: none;">
+                <h3 class="mt-4">Decrypted File</h3>
+                <a id="decryptedFileDownloadLink" href="" download="decrypted_file">Download Decrypted File</a>
+            </div>
+        </div>
+		<div id="infoTab" class="tab-pane fade">
+			<p id="softwareVersions">Loading versions...</p>
+		</div>
+    </div>
+</div>
+
+<script>
+    async function generateKeyPair() {
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const passphrase = document.getElementById('passphrase').value;
+		
+		const options = {
+			type: 'ecc', // Type of the key, defaults to ECC
+			curve: 'curve25519', // ECC curve name, defaults to curve25519
+			userIDs: [{ name, email }], // You can pass multiple user IDs
+			format: 'armored' // Output key format, defaults to 'armored' (other options: 'binary' or 'object')
+		};
+		if (passphrase) {
+			options.passphrase = passphrase;
+		}
+	    const { privateKey, publicKey } = await openpgp.generateKey(options);
+
+        document.getElementById('privateKey').value = privateKey;
+        document.getElementById('publicKey').value = publicKey;
+        document.getElementById('generatedKeys').style.display = 'block';
+    }
+
+    async function encryptMessage() {
+        const message = document.getElementById('messageToEncrypt').value;
+        const publicKeyArmored = document.getElementById('publicKeyToEncrypt').value;
+
+        const encrypted = await openpgp.encrypt({
+            message: await openpgp.createMessage({ text: message }), // input as Message object
+            encryptionKeys: await openpgp.readKey({ armoredKey: publicKeyArmored }),
+        });
+
+        document.getElementById('encryptedText').value = encrypted;
+        document.getElementById('encryptedMessage').style.display = 'block';
+    }
+
+	async function decryptMessage() {
+		const message = document.getElementById('messageToDecrypt').value;
+		const privateKeyArmored = document.getElementById('privateKeyToDecrypt').value;
+		const passphrase = document.getElementById('passphraseToDecrypt').value;
+		
+		let decryptionKeys;
+		if(passphrase){
+			decryptionKeys = await openpgp.decryptKey({
+				privateKey: await openpgp.readPrivateKey({ armoredKey: privateKeyArmored }),
+				passphrase: passphrase
+			});
+		}
+		else{
+			decryptionKeys = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored })
+		}
+
+		const { data: decrypted } = await openpgp.decrypt({
+			message: await openpgp.readMessage({ armoredMessage: message }), // Parse armored message
+			decryptionKeys: decryptionKeys
+		});
+
+		document.getElementById('decryptedText').value = decrypted;
+		document.getElementById('decryptedMessage').style.display = 'block';
+	}
+    async function encryptFile() {
+		const fileInput = document.getElementById('fileToEncrypt');
+		const publicKeyArmored = document.getElementById('publicKeyFileToEncrypt').value;
+
+		const file = fileInput.files[0];
+		if (!file) {
+			alert('Please select a file.');
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onload = async function(event) {
+			const fileData = new Uint8Array(event.target.result);
+			const message = await openpgp.createMessage({ binary: fileData });
+			const publicKey = await openpgp.readKey({ armoredKey: publicKeyArmored });
+			const encrypted = await openpgp.encrypt({
+				message: message, // input as Message object
+				encryptionKeys: publicKey,
+				format: 'binary' // ensure output is Uint8Array
+			});
+
+			const encryptedBlob = new Blob([encrypted], { type: 'application/octet-stream' });
+			const encryptedUrl = URL.createObjectURL(encryptedBlob);
+			const encryptedFileName = file.name + '.enc';
+
+			const downloadLink = document.getElementById('encryptedFileDownloadLink');
+			downloadLink.href = encryptedUrl;
+			downloadLink.download = encryptedFileName; // Set the download attribute to the new file name
+			document.getElementById('encryptedFileMessage').style.display = 'block';
+		};
+		reader.readAsArrayBuffer(file);
+	}
+
+
+    async function decryptFile() {
+		const fileInput = document.getElementById('fileToDecrypt');
+		const privateKeyArmored = document.getElementById('privateKeyFileToDecrypt').value;
+		const passphrase = document.getElementById('passphraseFileToDecrypt').value;
+
+		const file = fileInput.files[0];
+		if (!file) {
+			alert('Please select a file.');
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onload = async function(event) {
+			const encryptedData = new Uint8Array(event.target.result);
+			const encryptedMessage = await openpgp.readMessage({
+				binaryMessage: encryptedData // parse encrypted bytes
+			});
+
+			let decryptionKeys;
+			if (passphrase) {
+				decryptionKeys = await openpgp.decryptKey({
+					privateKey: await openpgp.readPrivateKey({ armoredKey: privateKeyArmored }),
+					passphrase: passphrase
+				});
+			} else {
+				decryptionKeys = await openpgp.readPrivateKey({ armoredKey: privateKeyArmored });
+			}
+
+			const { data: decrypted } = await openpgp.decrypt({
+				message: encryptedMessage,
+				decryptionKeys: decryptionKeys,
+				format: 'binary' // output as Uint8Array
+			});
+
+			const decryptedBlob = new Blob([decrypted], { type: 'application/octet-stream' });
+			const decryptedUrl = URL.createObjectURL(decryptedBlob);
+
+			let fileName = file.name;
+			if (fileName.endsWith('.enc')) {
+				fileName = fileName.slice(0, -4); // Remove .enc extension
+			} else {
+				fileName += '.dec'; // Append .dec extension
+			}
+
+			const downloadLink = document.getElementById('decryptedFileDownloadLink');
+			downloadLink.href = decryptedUrl;
+			downloadLink.download = fileName; // Set the download attribute to the modified file name
+			document.getElementById('decryptedFileMessage').style.display = 'block';
+		};
+		reader.readAsArrayBuffer(file);
+	}
+	document.addEventListener('DOMContentLoaded', async function() {
+		const softwareVersionsElement = document.getElementById('softwareVersions');
+		// check for openpgp
+		let openpgpversion = "Unknown";
+		// encrypt a message with versioning enabled
+		try {
+			openpgp.config.showVersion = true;
+			const keyPair = await openpgp.generateKey({
+				type: 'ecc',
+				curve: 'curve25519',
+				userIDs: [{ name: 'temp', email: 'temp@example.com' }]
+			});
+			const message = await openpgp.createMessage({ text: 'Version check' });
+			const encrypted = await openpgp.encrypt({
+				message,
+				encryptionKeys: await openpgp.readKey({ armoredKey: keyPair.publicKey })
+			});
+			const versionPattern = /Version: OpenPGP\.js ([\d.]+)/;
+			const match = encrypted.match(versionPattern);
+			openpgpversion = match[1]
+		} catch (error) {
+			console.error("Error during encryption:", error);
+		} finally {
+			openpgp.config.showVersion = false;
+		}
+		if (softwareVersionsElement) {
+			softwareVersionsElement.innerHTML = "<strong>OpenPGP.js Version:</strong> "+openpgpversion;
+		}
+		
+	    // check for bootstrap
+		let bootstrapversion = "Unknown";
+		if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip && bootstrap.Tooltip.VERSION) {
+			bootstrapversion =  bootstrap.Tooltip.VERSION;
+		}
+		if (softwareVersionsElement) {
+				softwareVersionsElement.innerHTML += "<br><strong>Bootstrap Version:</strong> "+bootstrapversion;
+		}
+	});
+</script>
+</body>
+</html>
